@@ -1,9 +1,9 @@
-
-resolver: nightly-2022-01-15
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/18.yaml
 
 packages:
 - .
 
 extra-deps:
-- git: https://github.com/codedownio/aeson-typescript.git
-  commit: 305cd581fce927ec3a5792ee2cf8b0e7208d901e
+  - git: https://github.com/agrafix/aeson-typescript.git
+    commit: 1ea2172d9c903d616ed53309a38f136f058dce22

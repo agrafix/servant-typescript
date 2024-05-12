@@ -5,19 +5,20 @@
 
 packages:
 - completed:
+    commit: 1ea2172d9c903d616ed53309a38f136f058dce22
+    git: https://github.com/agrafix/aeson-typescript.git
     name: aeson-typescript
-    version: 0.4.0.0
-    git: https://github.com/codedownio/aeson-typescript.git
     pantry-tree:
-      size: 3566
-      sha256: 25ea8a635bf33bbdcbef302c977e84486be33ab3df0c8de344c13d58a283f2ae
-    commit: 305cd581fce927ec3a5792ee2cf8b0e7208d901e
+      sha256: 849c9adf5377414491f10453fcfcdeacfb00c441798005cfc4aea0e7608b292d
+      size: 4199
+    version: 0.6.3.0
   original:
-    git: https://github.com/codedownio/aeson-typescript.git
-    commit: 305cd581fce927ec3a5792ee2cf8b0e7208d901e
+    commit: 1ea2172d9c903d616ed53309a38f136f058dce22
+    git: https://github.com/agrafix/aeson-typescript.git
 snapshots:
 - completed:
-    size: 621914
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/1/15.yaml
-    sha256: da9648bb5bf30143b3b45c0daeb2c06ee09fa2af08d362672acf318c6eac1724
-  original: nightly-2022-01-15
+    sha256: 9bebedd3de0195aa01fd55de7f6d4446667440297a7315e69cd72c2610af265f
+    size: 713338
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/18.yaml
+  original:
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/18.yaml
