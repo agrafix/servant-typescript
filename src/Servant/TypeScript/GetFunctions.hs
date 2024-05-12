@@ -1,7 +1,7 @@
-
-module Servant.TypeScript.GetFunctions (
-  getFunctions
-  ) where
+module Servant.TypeScript.GetFunctions
+  ( getFunctions,
+  )
+where
 
 import Control.Lens
 import Data.Maybe
@@ -10,15 +10,15 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Servant.Foreign.Internal as FI
 
-
 -- | Default implementation of @getFunctions@.
 getFunctions :: (Req Text -> Text) -> [Req Text] -> Text
 getFunctions getFunctionName reqs =
   [i|import queryString from "query-string";\n\n|]
-  <> T.intercalate "\n" (fmap (reqToFunction getFunctionName) reqs)
+    <> T.intercalate "\n" (fmap (reqToFunction getFunctionName) reqs)
 
 reqToFunction :: (Req Text -> Text) -> Req Text -> Text
-reqToFunction getFunctionName req = [i|
+reqToFunction getFunctionName req =
+  [i|
 export function #{getFunctionName req}#{getGenericBrackets req}(#{getFunctionArgs req}): Promise<#{getReturnType req}> {
   let options: RequestInit = {
     credentials: "same-origin" as RequestCredentials,
@@ -47,16 +47,19 @@ hasReturn req = case req ^. reqReturnType of
   Just _ -> True
 
 getQueryParamNames :: Req Text -> [Text]
-getQueryParamNames req = [x ^. (queryArgName . argName . _PathSegment)
-                         | x <- req ^. (reqUrl . queryStr)]
+getQueryParamNames req =
+  [ x ^. (queryArgName . argName . _PathSegment)
+    | x <- req ^. (reqUrl . queryStr)
+  ]
 
 getFunctionArgs :: Req Text -> Text
-getFunctionArgs req = T.intercalate ", " $ catMaybes $
-  maybeBodyArg
-  : fmap formatCaptureArg (req ^. (reqUrl . path))
-  <> fmap (Just . formatQueryArg) (req ^. (reqUrl . queryStr))
-  <> [Just [i|fetchFn?: (input: RequestInfo, init?: RequestInit) => Promise<Response>|]]
-
+getFunctionArgs req =
+  T.intercalate ", " $
+    catMaybes $
+      maybeBodyArg :
+      fmap formatCaptureArg (req ^. (reqUrl . path))
+        <> fmap (Just . formatQueryArg) (req ^. (reqUrl . queryStr))
+        <> [Just [i|fetchFn?: (input: RequestInfo, init?: RequestInit) => Promise<Response>|]]
   where
     maybeBodyArg = case req ^. reqBody of
       Nothing -> Nothing
