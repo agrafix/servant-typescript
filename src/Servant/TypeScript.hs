@@ -43,6 +43,10 @@ module Servant.TypeScript
   ( writeTypeScriptLibrary,
     writeTypeScriptLibrary',
 
+    -- * Generate into memory
+    writeClientTypes',
+    writeClientLibraries',
+
     -- * Options
     ServantTypeScriptOptions,
     defaultServantTypeScriptOptions,
@@ -57,7 +61,7 @@ module Servant.TypeScript
 where
 
 import Control.Lens
-import Control.Monad (forM_, when)
+import Control.Monad (forM, forM_, when)
 import Control.Monad.Reader
 import Data.Aeson.TypeScript.TH
 import qualified Data.List as L
@@ -99,7 +103,18 @@ writeClientTypes ::
   Proxy api ->
   FilePath ->
   ReaderT ServantTypeScriptOptions IO ()
-writeClientTypes _ folder = do
+writeClientTypes x folder = do
+  types <- writeClientTypes' x
+  liftIO $ writeFile (folder </> "client.d.ts") types
+
+writeClientTypes' ::
+  forall api.
+  ( HasForeign LangTSDecls [TSDeclaration] api,
+    GenerateList [TSDeclaration] (Foreign [TSDeclaration] api)
+  ) =>
+  Proxy api ->
+  ReaderT ServantTypeScriptOptions IO String
+writeClientTypes' _ = do
   -- Types from API
   let decls = S.toList $ S.fromList $ getAllTypesFromReqs (getReqsWithDecls (Proxy :: Proxy api))
 
@@ -107,7 +122,7 @@ writeClientTypes _ folder = do
   extra <- asks extraTypes
   let decls' = mconcat [getTypeScriptDeclarations x | TSType x <- extra]
 
-  liftIO $ writeFile (folder </> "client.d.ts") (formatTSDeclarations (L.nub (decls <> decls')))
+  pure $ formatTSDeclarations (L.nub (decls <> decls'))
 
 writeClientLibraries ::
   forall api.
@@ -117,22 +132,33 @@ writeClientLibraries ::
   Proxy api ->
   FilePath ->
   ReaderT ServantTypeScriptOptions IO ()
-writeClientLibraries _ folder = do
+writeClientLibraries x folder = do
+  libs <- writeClientLibraries' x
+  forM_ libs $ \(fileKey, content) -> do
+    let (dir, _) = splitFileName fileKey
+    liftIO $ createDirectoryIfMissing True (folder </> dir)
+    let path' = folder </> fileKey
+    liftIO $ T.writeFile path' content
+
+writeClientLibraries' ::
+  forall api.
+  ( HasForeign LangTS T.Text api,
+    GenerateList T.Text (Foreign T.Text api)
+  ) =>
+  Proxy api ->
+  ReaderT ServantTypeScriptOptions IO [(String, T.Text)]
+writeClientLibraries' _ = do
   -- Write the functions
   let allEndpoints = getEndpoints (Proxy :: Proxy api)
   ServantTypeScriptOptions {..} <- ask
   let groupedMap = groupBy getFileKey allEndpoints
-  forM_ (M.toList groupedMap) $ \(fileKey, reqs) -> do
-    let (dir, _) = splitFileName fileKey
-    liftIO $ createDirectoryIfMissing True (folder </> dir)
-
-    let path' = folder </> fileKey
+  forM (M.toList groupedMap) $ \(fileKey, reqs) -> do
     let functionNames = fmap getFunctionName reqs
     when (L.length functionNames /= S.size (S.fromList functionNames)) $ do
       let duplicates = L.foldl' (flip (M.alter (\case Nothing -> Just (1 :: Integer); Just x -> Just (x + 1)))) mempty functionNames
-      error [i|Duplicate function names found when trying to generate '#{path'}': #{M.filter (>= 2) duplicates}|]
+      error [i|Duplicate function names found when trying to generate '#{fileKey}': #{M.filter (>= 2) duplicates}|]
 
-    liftIO $ T.writeFile path' (getFunctions getFunctionName reqs)
+    pure (fileKey, getFunctions getFunctionName reqs)
   where
     groupBy :: Ord k => (v -> k) -> [v] -> M.Map k [v]
     groupBy key as = M.fromListWith (++) as'
